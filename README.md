@@ -1,6 +1,6 @@
 # SCOOP-Simulation: Payment-Channel Congestion Research Prototype
 
-SCOOP-Sim is a Python simulation for studying liquidity-based congestion in payment-channel networks, inspired by the paper [*SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks*](https://arxiv.org/abs/2503.12625).
+SCOOP-Simulation is a Python simulation for studying liquidity-based congestion in payment-channel networks, inspired by the paper [*SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks*](https://arxiv.org/abs/2503.12625).
 
 It compares several attacker allocation strategies on synthetic graphs or a historical Lightning Network topology. For topology-based experiments, the graph structure and public channel metadata come from a snapshot, while directional balances are **modeled** because the snapshot does not reveal real channel balances.
 
@@ -152,7 +152,7 @@ For step-by-step instructions to test locally, initialize Git, create a GitHub r
 ## Project layout
 
 ```text
-scoop-sim/
+scoop-simulation/
 ├── scoop/                 # simulation modules
 │   ├── network.py         # directed balances and channel accounting
 │   ├── generator.py       # synthetic network and balance models
