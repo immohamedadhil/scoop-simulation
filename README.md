@@ -1,4 +1,4 @@
-# SCOOP-Sim: Payment-Channel Congestion Research Prototype
+# SCOOP-Simulation: Payment-Channel Congestion Research Prototype
 
 SCOOP-Sim is a Python simulation for studying liquidity-based congestion in payment-channel networks, inspired by the paper [*SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks*](https://arxiv.org/abs/2503.12625).
 
