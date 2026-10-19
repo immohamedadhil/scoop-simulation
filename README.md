@@ -173,4 +173,4 @@ Mohammed Ababneh, Kartick Kolachala, and Roopa Vishwanathan. “SCOOP: CoSt-effe
 
 ## License
 
-The project includes an MIT license template. Before publishing, replace the placeholder copyright holder with your preferred copyright notice and confirm MIT is the license you want to use. See `LICENSE`.
+The project includes an MIT license template
