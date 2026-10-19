@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local topology data (download separately; do not commit the snapshot)
+data/*.json
+data/*.json.zst
+
+# Experiment outputs, logs, and checkpoints
+results*/
+logs/
+*.zip
+raw_results_checkpoint.csv
+experiment_config.json
+
+#Docs
+docs/
