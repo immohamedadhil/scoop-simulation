@@ -1,0 +1,54 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "budgets_per_owner_satoshi": [
+    75000000,
+    100000000
+  ],
+  "legacy_budgets_per_pair_satoshi": [
+    75000000,
+    100000000
+  ],
+  "honest_payment_amounts_satoshi": [
+    10000,
+    100000,
+    1000000
+  ],
+  "n_payments": 5000,
+  "n_pairs": 6,
+  "k_paths": 50,
+  "max_path_length_channels": 8,
+  "attachment": "hubs",
+  "route_mode": "sender_to_all_receivers",
+  "budget_scope": "per sender",
+  "balance_model": "uniform",
+  "network_label": "data/lngraph_2021_11_27__00_00.json",
+  "strategies": [
+    "no_attack",
+    "random",
+    "greedy_general",
+    "spcr_max",
+    "joint_spcr_max"
+  ],
+  "balance_note": "modeled, not observed"
+}
