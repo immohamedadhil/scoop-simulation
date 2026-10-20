@@ -1,175 +1,69 @@
 # SCOOP-Simulation: Payment-Channel Congestion Research Prototype
 
-SCOOP-Simulation is a Python simulation for studying liquidity-based congestion in payment-channel networks, inspired by the paper [*SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks*](https://arxiv.org/abs/2503.12625).
+A Python research simulator for exploring congestion attacks in the Bitcoin Lightning Network. It compares attack strategies on synthetic networks and a historical Lightning topology, then measures their effects on ordinary payment success.
 
-It compares several attacker allocation strategies on synthetic graphs or a historical Lightning Network topology. For topology-based experiments, the graph structure and public channel metadata come from a snapshot, while directional balances are **modeled** because the snapshot does not reveal real channel balances.
+This is an independent, SCOOP-inspired research prototype,not the paper authors' official implementation or an exact reproduction. It does not interact with live Lightning nodes. Historical channel balances are not public in the snapshot, so balances in these experiments are **modeled, not observed**.
 
-> **Research status:** this is a research prototype and an independent SCOOP-inspired implementation. It is not the authors' official code, is not an exact reproduction of the paper, and does not connect to or attack a live Lightning Network node.
+## What it compares
 
-## What it explores
+- **No attack** : baseline for legitimate payments.
+- **Random** : chooses candidate routes at random.
+- **Greedy General** : prioritizes routes using their current bottlenecks.
+- **SPCR-Max** : uses linear programming to allocate amounts across candidate routes.
+- **Joint SPCR-Max** : also constrains allocations that share a directed channel.
 
-- **Random:** randomly allocates a sender's budget among candidate routes.
-- **Greedy General:** prioritizes routes with larger current bottlenecks.
-- **SPCR-Max:** allocates payments using a linear program based on path length and original path bottleneck, then applies feasible payments sequentially.
-- **Joint SPCR-Max:** adds shared directed-channel balance constraints within the optimization for each budget owner. This is an extension in this simulator, using a standard optimization idea; it should not be described as a new optimization technique by itself.
-- **No-attack baseline:** evaluates the same honest-payment workload without attacker locks.
+The simulator records locked payment value, PCR/SPCR congestion scores, and honest-payment success. See `scoop/` for the implementation and `results_real_full_diverse/` for the full experiment outputs.
 
-The runner reports attacker-side congestion measures and network-impact measurements. The main congestion measures include locked payment, PCR, and SPCR with two `L_max` interpretations (`20` and `8`). It also records honest-payment success rate, success volume, and average routing attempts. See [the experiment design notes](docs/experimental-design.md) for modeling choices and limitations.
+## Results
 
-## Quick start
+The full historical-topology run completed **120 scenarios across 20 random seeds**, producing 600 strategy-level result rows. It tested five strategies, two per-sender budgets (75M and 100M satoshis), and three payment sizes (10,000, 100,000, and 1,000,000 satoshis). The processed topology contained **12,314 nodes and 57,790 channels**.
 
-Recommended: Python 3.11 or 3.12.
+Joint SPCR-Max achieved higher mean SPCR-8 scores than SPCR-Max at both budgets:
 
-### 1. Get the code
+| Budget per sender | SPCR-Max | Joint SPCR-Max |
+|---:|---:|---:|
+| 75M sats | 0.5659 | 0.5890 |
+| 100M sats | 0.5701 | 0.5929 |
+
+The effect on legitimate payment success was much smaller. Averaged across the two budgets and 20 seeds:
+
+| Payment amount | No-attack success | Joint SPCR-Max success | Change |
+|---:|---:|---:|---:|
+| 10,000 sats | 87.250% | 87.144% | −0.106 percentage points |
+| 100,000 sats | 32.353% | 32.206% | −0.148 percentage points |
+| 1,000,000 sats | 6.195% | 6.125% | −0.071 percentage points |
+
+These are results from this simulation setup, not measurements of the live network. The results suggest that higher attacker-side congestion scores do not necessarily mean a large drop in ordinary payment success.
+
+Detailed data and plots are in [`results_real_full_diverse/`](results_real_full_diverse/), including `summary.csv`, `paired_differences.csv`, and `summary_report.md`.
+
+## Run it
+
+Python 3.11 or 3.12 is recommended.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/scoop-sim.git
-cd scoop-sim
-```
-
-Replace `YOUR_USERNAME` with your GitHub username after you create the repository.
-
-### 2. Create an environment and install dependencies
-
-**Linux/macOS/AWS Ubuntu:**
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
+git clone https://github.com/YOUR-USERNAME/scoop-simulation.git
+cd scoop-simulation
 python -m pip install -e ".[dev]"
-```
-
-**Windows PowerShell:**
-
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-### 3. Run the tests
-
-```bash
 python -m pytest -q
 ```
 
-### 4. Run a small synthetic smoke test
+A small synthetic smoke test:
 
 ```bash
 python -m scoop.experiments --quick --nodes 50 --k-paths 5 --output results_smoke
 ```
 
-This is intended to verify that the pipeline runs, not to support research conclusions. Outputs are written to `results_smoke/`.
+To run on the historical topology, download `lngraph_2021_11_27__00_00.json.zst` from the [TU Berlin discharged-PC data repository](https://git.tu-berlin.de/rohrer/discharged-pc-data), decompress it with `scripts/decompress_snapshot.py`, and pass the resulting JSON file with `--snapshot`. The dataset is not included in this repository.
 
-## Using the historical topology
+## Limitations
 
-The topology data is **not included** in this repository. Obtain the snapshot separately from the [TU Berlin discharged-PC data repository](https://git.tu-berlin.de/rohrer/discharged-pc-data). This project has been tested with `lngraph_2021_11_27__00_00.json.zst`.
-
-Create a `data/` directory and download the snapshot (or follow the repository's current instructions if its hosting path changes):
-
-```bash
-mkdir -p data
-wget -O data/lngraph_2021_11_27__00_00.json.zst \
-  "https://git.tu-berlin.de/rohrer/discharged-pc-data/-/raw/master/snapshots/lngraph_2021_11_27__00_00.json.zst"
-```
-
-Since some Zstandard frames do not contain the decompressed size, stream-decompress the file rather than relying on a single-call `decompress()` operation:
-
-```bash
-mkdir -p data
-python scripts/decompress_snapshot.py \
-  data/lngraph_2021_11_27__00_00.json.zst \
-  data/lngraph_2021_11_27__00_00.json
-```
-
-Then run a small historical-topology smoke test:
-
-```bash
-python -m scoop.experiments \
-  --snapshot data/lngraph_2021_11_27__00_00.json \
-  --quick \
-  --k-paths 50 \
-  --max-path-length 8 \
-  --route-mode sender_to_all_receivers \
-  --output results_real_smoke
-```
-
-Keep downloaded topology data and generated output out of Git. The provided `.gitignore` excludes common local data/output paths.
-
-## Reproducible experiments
-
-Example medium run:
-
-```bash
-python -m scoop.experiments \
-  --snapshot data/lngraph_2021_11_27__00_00.json \
-  --seeds 3 \
-  --payments 500 \
-  --budgets 75000000 100000000 \
-  --amounts 10000 100000 1000000 \
-  --k-paths 50 \
-  --max-path-length 8 \
-  --route-mode sender_to_all_receivers \
-  --output results_real_medium
-```
-
-The full experiment is much more expensive. For long AWS runs, use `tmux`, log output, and checkpoint/resume support. See [Safe long-running experiments](docs/safe-runs.md) before starting one.
-
-### Route and budget modes
-
-- `sender_to_all_receivers` (default): each sender has routes to all designated receivers; routes originating at that sender share one budget.
-- `fixed_pairs`: each sender routes only to its matching receiver.
-
-These are separate modeling assumptions. Do not combine their outputs as though they were identical experiments. The paper leaves some details of attacker-pair construction and route enumeration unspecified, so these settings are explicit choices made by this implementation rather than proof of exact reproduction.
-
-## Outputs
-
-The chosen output directory includes:
-
-- `experiment_config.json` — settings needed to identify the run
-- `raw_results.csv` — per-scenario/per-strategy results
-- `summary.csv` — group means and uncertainty intervals
-- `paired_differences.csv` — attack-minus-baseline comparisons
-- `summary_report.md` — compact report and caveats
-- PNG charts — congestion and honest-payment metrics
-- `raw_results_checkpoint.csv` — incremental checkpoint used for resume
-
-## Important limitations
-
-- The public topology snapshot does not provide actual directional channel balances. Balance splits are simulated and must be labelled **modeled, not observed**.
-- This simulator uses a static graph. It does not model real payment fees, HTLC-slot exhaustion, lock expiries/timelocks, or live routing behavior in full protocol detail.
-- Candidate routes are sampled across exact hop-length buckets under a bounded search budget. The resulting path-length distribution depends on the graph, attachment choice, and route-search parameters.
-- The paper's exact topology, balance initialization, pair interpretation, and some metric details are not completely specified. Record assumptions and parameter values when reporting results.
-- A high PCR/SPCR score does not automatically imply a large decrease in honest-payment success. Report the attacker-side metrics and the honest-workload impact separately.
-- Small smoke runs are software checks, not evidence of attack effectiveness. Use multiple seeds and discuss uncertainty.
-
-## Publish this project
-
-For step-by-step instructions to test locally, initialize Git, create a GitHub repository, and push the code without uploading data or results, see [Publish this project to GitHub](docs/publishing-to-github.md).
-
-## Project layout
-
-```text
-scoop-simulation/
-├── scoop/                 # simulation modules
-│   ├── network.py         # directed balances and channel accounting
-│   ├── generator.py       # synthetic network and balance models
-│   ├── topology.py        # historical snapshot loading/preprocessing
-│   ├── paths.py           # attacker endpoints and candidate route selection
-│   ├── attacks.py         # attack allocation strategies
-│   ├── metrics.py         # PCR/SPCR and summary metrics
-│   ├── honest.py          # honest workload generation and routing
-│   └── experiments.py     # CLI runner, outputs, plots, checkpoint/resume
-├── tests/                 # automated tests
-├── scripts/               # snapshot preparation tools
-└── docs/                  # modeling and long-run notes
-```
+Balances are modeled, not observed. The simulator uses a static graph and does not fully model real fees, HTLC-slot limits, timeouts, or live routing behavior. Results depend on the selected topology, routing settings, balance model, and assumptions. The current test suite checks software behavior; passing tests is not proof that the model represents every aspect of the live network.
 
 ## Reference
 
-Mohammed Ababneh, Kartick Kolachala, and Roopa Vishwanathan. “SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks.” arXiv:2503.12625 (2025). [Paper](https://arxiv.org/abs/2503.12625).
+Mohammed Ababneh, Kartick Kolachala, and Roopa Vishwanathan, “SCOOP: CoSt-effective COngestiOn Attacks in Payment Channel Networks” (2025). [Paper](https://arxiv.org/abs/2503.12625).
+
 
 ## License
 
